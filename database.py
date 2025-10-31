@@ -1,7 +1,11 @@
 import sqlite3
 from datetime import datetime
 
-DATABASE = 'invoices.db'
+import os
+
+# Use persistent disk on Render, local file otherwise
+DATABASE_PATH = os.environ.get('DATABASE_PATH', '.')
+DATABASE = os.path.join(DATABASE_PATH, 'invoices.db')
 
 
 def init_db():
