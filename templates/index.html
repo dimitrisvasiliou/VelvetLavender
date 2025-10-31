@@ -71,7 +71,7 @@
                 <div class="file-info">
                     <div class="file-info-item">
                         <span class="label">📄 Current File:</span>
-                        <span class="value">Ana-s-invoices.xlsx</span>
+                        <span class="value">{{ excel_filename }}</span>
                     </div>
                     <div class="file-info-item">
                         <span class="label">📋 Total Invoices:</span>
@@ -190,7 +190,7 @@
 
             {% if not excel_exists %}
                 <div class="alert alert-error">
-                    ❌ Excel file "Ana-s-invoices.xlsx" not found!
+                    ❌ Excel file {{ excel_filename }} not found!
                     Please add your Excel file to the project folder.
                 </div>
             {% else %}

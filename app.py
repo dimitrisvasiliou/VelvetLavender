@@ -128,8 +128,12 @@ def index():
         df = pd.read_excel(EXCEL_FILE)
         invoice_count = len(df)
 
+    # Get just the filename (not the full path)
+    excel_filename = os.path.basename(EXCEL_FILE)
+
     return render_template('index.html',
                            excel_exists=excel_exists,
+                           excel_filename=excel_filename,  # Add this line
                            current_date=current_date,
                            current_month=current_month,
                            invoice_count=invoice_count,
