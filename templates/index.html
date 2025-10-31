@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velvet Lavender Invoice Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+    <div class="header-content">
+        <div>
+            <h1>🌸 Velvet Lavender</h1>
+            <p class="subtitle">Invoice Generator</p>
+        </div>
+        <a href="/logout" class="btn-logout">🚪 Logout</a>
+    </div>
+</header>
+
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Status Card -->
+        <div class="card status-card">
+            <h2>📊 Current Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="label">📅 Today's Date:</span>
+                    <span class="value">{{ current_date }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">📆 Current Month:</span>
+                    <span class="value">{{ current_month }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">📄 Invoices to Generate:</span>
+                    <span class="value">{{ invoice_count }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">📧 Email Configured:</span>
+                    <span class="value">
+                        {% if email_config.sender_email %}
+                            ✅ Yes
+                        {% else %}
+                            ❌ No
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+                <!-- Email Configuration -->
+        <div class="card">
+            <h2>📧 Email Configuration</h2>
+
+            {% if email_config.configured %}
+                <!-- Show configured status -->
+                <div class="email-configured">
+                    <div class="alert alert-success">
+                        ✅ Email is configured and ready!
+                    </div>
+
+                    <div class="email-info">
+                        <div class="email-info-item">
+                            <span class="label">📤 From:</span>
+                            <span class="value">{{ email_config.sender_email }}</span>
+                        </div>
+                        <div class="email-info-item">
+                            <span class="label">📥 To:</span>
+                            <span class="value">{{ email_config.recipient_email }}</span>
+                        </div>
+                        <div class="email-info-item">
+                            <span class="label">🔑 Password:</span>
+                            <span class="value">••••••••••••</span>
+                        </div>
+                    </div>
+
+                    <form action="/reset-email" method="POST" style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-secondary" onclick="return confirm('Are you sure you want to reset email configuration?')">
+                            🔄 Reset Email Configuration
+                        </button>
+                    </form>
+                </div>
+            {% else %}
+                <!-- Show configuration form -->
+                <form action="/configure-email" method="POST">
+                    <div class="form-group">
+                        <label for="sender_email">Your Gmail Address:</label>
+                        <input type="email" id="sender_email" name="sender_email"
+                               placeholder="your.email@gmail.com" required>
+                        <small>Use your Gmail address to send invoices</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sender_password">Gmail App Password:</label>
+                        <input type="password" id="sender_password" name="sender_password"
+                               placeholder="xxxx xxxx xxxx xxxx" required>
+                        <small>
+                            <a href="https://myaccount.google.com/apppasswords" target="_blank">
+                                Get your Gmail App Password here →
+                            </a>
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recipient_email">Send Invoices To:</label>
+                        <input type="email" id="recipient_email" name="recipient_email"
+                               placeholder="client@example.com" required>
+                        <small>Email address where invoices will be sent</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        💾 Save Email Configuration
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+
+        <!-- Generate Invoices -->
+        <div class="card">
+            <h2>🚀 Generate Invoices</h2>
+
+            {% if not excel_exists %}
+                <div class="alert alert-error">
+                    ❌ Excel file "Ana-s-invoices.xlsx" not found!
+                    Please add your Excel file to the project folder.
+                </div>
+            {% else %}
+                <form action="/generate" method="POST">
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" name="send_email"
+                                   {% if email_config.sender_email %}checked{% endif %}>
+                            <span>📧 Send invoices via email after generating</span>
+                        </label>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">
+                            🎨 Generate All Invoices
+                        </button>
+                        <a href="/download-all" class="btn btn-secondary">
+                            📥 Download All as ZIP
+                        </a>
+                    </div>
+                </form>
+
+                <div class="info-box">
+                    <p><strong>What happens when you click "Generate":</strong></p>
+                    <ul>
+                        <li>✅ Generate {{ invoice_count }} professional PDF invoices</li>
+                        <li>✅ Update Excel file with new invoice numbers</li>
+                        <li>✅ Set date to today: {{ current_date }}</li>
+                        <li>✅ Set month to: {{ current_month }}</li>
+                        {% if email_config.sender_email %}
+                            <li>✅ Send all PDFs via email</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Made with ❤️ for Velvet Lavender</p>
+            <p class="small">Oriadon 12, Strovolos, 2037 • Nicosia, Cyprus</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Velvet Lavender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Logo/Brand -->
+            <div class="login-header">
+                <h1>🌸 Velvet Lavender</h1>
+                <p class="login-subtitle">Invoice Generator</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Login Form -->
+            <form action="/login" method="POST" class="login-form">
+                <div class="form-group">
+                    <label for="password">🔒 Enter Password:</label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="Enter your password"
+                           required
+                           autofocus
+                           autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    🔓 Login
+                </button>
+            </form>
+
+            <!-- Footer Info -->
+            <div class="login-footer">
+                <p class="small">Oriadon 12, Strovolos, 2037 • Nicosia, Cyprus</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
