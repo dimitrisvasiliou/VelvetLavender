@@ -15,9 +15,13 @@
                     <h1>🌸 Velvet Lavender</h1>
                     <p class="subtitle">Invoice Generator</p>
                 </div>
-                <a href="/logout" class="btn-logout">🚪 Logout</a>
+                <div>
+                    <a href="/invoices" class="btn-logout" style="margin-right: 10px;">📊 Manage Invoices</a>
+                    <a href="/logout" class="btn-logout">🚪 Logout</a>
+                </div>
             </div>
         </header>
+
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -58,6 +62,67 @@
                 </div>
             </div>
         </div>
+
+                <!-- Payment Statistics & Quick Actions -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>💰 Payment Overview</h2>
+                <a href="/invoices" class="btn btn-secondary">📊 View All Details →</a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card-small outstanding">
+                    <div class="stat-icon-small">💰</div>
+                    <div class="stat-value">€{{ stats.outstanding }}</div>
+                    <div class="stat-label">Outstanding Balance</div>
+                    {% if stats.outstanding > 0 %}
+                        <a href="/invoices" style="font-size: 0.8em; color: var(--burgundy); margin-top: 8px; display: block;">
+                            View unpaid invoices →
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="stat-card-small pending">
+                    <div class="stat-icon-small">⏳</div>
+                    <div class="stat-value">{{ stats.pending_count }}</div>
+                    <div class="stat-label">Pending Invoices</div>
+                    {% if stats.pending_count > 0 %}
+                        <p style="font-size: 0.75em; color: var(--brown); margin-top: 5px;">
+                            Awaiting payment
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="stat-card-small paid">
+                    <div class="stat-icon-small">✅</div>
+                    <div class="stat-value">€{{ stats.paid_this_month }}</div>
+                    <div class="stat-label">Paid This Month</div>
+                    <p style="font-size: 0.75em; color: #059669; margin-top: 5px;">
+                        {{ stats.paid_count }} total paid
+                    </p>
+                </div>
+
+                <div class="stat-card-small overdue">
+                    <div class="stat-icon-small">⚠️</div>
+                    <div class="stat-value">{{ stats.overdue_count }}</div>
+                    <div class="stat-label">Overdue Invoices</div>
+                    {% if stats.overdue_count > 0 %}
+                        <a href="/invoices" style="font-size: 0.8em; color: #DC2626; margin-top: 8px; display: block;">
+                            Action required! →
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if stats.outstanding > 0 %}
+                <div class="info-box" style="margin-top: 20px; background: #FEF3C7; border-left-color: #F59E0B;">
+                    <p><strong>💡 Quick Tip:</strong> You have <strong>€{{ stats.outstanding }}</strong> in unpaid invoices.
+                    Visit the <a href="/invoices" style="color: var(--burgundy); text-decoration: underline;">Invoice Management</a>
+                    page to track payments and send reminders.</p>
+                </div>
+            {% endif %}
+        </div>
+
 
                 <!-- Excel File Management -->
         <div class="card">

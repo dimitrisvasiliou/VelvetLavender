@@ -7,6 +7,13 @@ import zipfile
 from functools import wraps
 from werkzeug.utils import secure_filename
 import shutil
+from database import (
+    get_all_invoices,
+    get_invoice_stats,
+    update_invoice_status,
+    delete_invoice
+)
+from flask import send_from_directory
 
 app = Flask(__name__)
 app.secret_key = 'velvet-lavender-secret-key-2025-secure'
@@ -68,13 +75,14 @@ def login_required(f):
 
     return decorated_function
 
+
 # Add this with other configurations (after OUTPUT_FOLDER)
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
+
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -131,13 +139,17 @@ def index():
     # Get just the filename (not the full path)
     excel_filename = os.path.basename(EXCEL_FILE)
 
+    # Get invoice statistics
+    stats = get_invoice_stats()
+
     return render_template('index.html',
                            excel_exists=excel_exists,
-                           excel_filename=excel_filename,  # Add this line
+                           excel_filename=excel_filename,
                            current_date=current_date,
                            current_month=current_month,
                            invoice_count=invoice_count,
-                           email_config=email_config)
+                           email_config=email_config,
+                           stats=stats)  # Add this line
 
 
 @app.route('/configure-email', methods=['POST'])
@@ -224,6 +236,7 @@ def generate():
 
     return redirect(url_for('index'))
 
+
 @app.route('/download-all')
 @login_required
 def download_all():
@@ -252,6 +265,13 @@ def preview(filename):
     if os.path.exists(pdf_path):
         return send_file(pdf_path)
     return "PDF not found", 404
+
+
+@app.route('/preview/<filename>')
+@login_required
+def preview_pdf(filename):
+    """Serve PDF for preview"""
+    return send_from_directory(OUTPUT_FOLDER, filename)
 
 
 @app.route('/upload-excel', methods=['POST'])
@@ -304,6 +324,54 @@ def delete_excel():
         flash(f'❌ Error deleting file: {str(e)}', 'error')
 
     return redirect(url_for('index'))
+
+
+@app.route('/invoices')
+@login_required
+def invoices():
+    """Invoice list page with status management"""
+    invoices_list = get_all_invoices()
+    stats = get_invoice_stats()
+
+    return render_template('invoices.html',
+                           invoices=invoices_list,
+                           stats=stats)
+
+
+@app.route('/update-status', methods=['POST'])
+@login_required
+def update_status():
+    """Update invoice payment status"""
+    invoice_number = request.form.get('invoice_number')
+    status = request.form.get('status')
+
+    if not invoice_number or not status:
+        flash('❌ Invalid request', 'error')
+        return redirect(url_for('invoices'))
+
+    if status == 'paid':
+        payment_date = datetime.now().strftime('%Y-%m-%d')
+        update_invoice_status(invoice_number, status, payment_date)
+    else:
+        update_invoice_status(invoice_number, status)
+
+    flash(f'✅ Invoice {invoice_number} marked as {status.title()}', 'success')
+    return redirect(url_for('invoices'))
+
+
+@app.route('/delete-invoice', methods=['POST'])
+@login_required
+def delete_invoice_route():
+    """Delete an invoice"""
+    invoice_number = request.form.get('invoice_number')
+
+    if not invoice_number:
+        flash('❌ Invalid request', 'error')
+        return redirect(url_for('invoices'))
+
+    delete_invoice(invoice_number)
+    flash(f'✅ Invoice {invoice_number} deleted', 'success')
+    return redirect(url_for('invoices'))
 
 
 if __name__ == '__main__':

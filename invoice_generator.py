@@ -1,3 +1,4 @@
+from database import add_invoice
 import pandas as pd
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
@@ -639,8 +640,13 @@ def process_invoices(excel_file, output_folder, logo_path, email_config=None, te
         client_name_clean = invoice_data['client_name'].replace(' ', '_').replace('.', '').replace(',', '')
         pdf_filename = f"{output_folder}/Invoice_{client_name_clean}_{current_month}_{current_year}.pdf"
 
-        create_pdf(invoice_data, pdf_filename, logo_path)  # Use selected template
+        create_pdf(invoice_data, pdf_filename, logo_path)
         generated_pdfs.append(pdf_filename)
+
+        # Save to database
+        invoice_data['pdf_filename'] = pdf_filename
+        invoice_data['template'] = template
+        add_invoice(invoice_data)
 
     df.to_excel(excel_file, index=False)
     return generated_pdfs

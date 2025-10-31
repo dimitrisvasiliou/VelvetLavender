@@ -686,3 +686,269 @@ input[type="file"].form-control:hover {
     border-color: var(--burgundy);
     background: var(--white);
 }
+/* ============================================ */
+/* INVOICE MANAGEMENT STYLES */
+/* ============================================ */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.stat-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 2px solid var(--cream-dark);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card.outstanding {
+    border-color: var(--burgundy);
+    background: linear-gradient(135deg, #FFF5F5 0%, var(--white) 100%);
+}
+
+.stat-card.pending {
+    border-color: #F59E0B;
+    background: linear-gradient(135deg, #FFFBEB 0%, var(--white) 100%);
+}
+
+.stat-card.paid {
+    border-color: #10B981;
+    background: linear-gradient(135deg, #ECFDF5 0%, var(--white) 100%);
+}
+
+.stat-card.overdue {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #FEF2F2 0%, var(--white) 100%);
+}
+
+.stat-icon {
+    font-size: 2.5em;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: var(--brown);
+    margin-top: 5px;
+}
+
+/* Small stat cards for dashboard */
+.stat-card-small {
+    background: var(--cream);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border-left: 4px solid var(--burgundy);
+}
+
+.stat-card-small.pending {
+    border-left-color: #F59E0B;
+}
+
+.stat-card-small.paid {
+    border-left-color: #10B981;
+}
+
+.stat-card-small .stat-value {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.stat-card-small .stat-label {
+    font-size: 0.85em;
+    color: var(--brown);
+    margin-top: 5px;
+}
+
+/* Invoice Table */
+.table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+}
+
+.invoice-table thead {
+    background: var(--burgundy);
+    color: var(--white);
+}
+
+.invoice-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.invoice-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--cream-dark);
+}
+
+.invoice-table tbody tr:hover {
+    background: var(--cream);
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.status-badge.status-paid {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.status-badge.status-pending {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.status-badge.status-overdue {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.status-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85em;
+    background: var(--white);
+    cursor: pointer;
+}
+
+.status-select:hover {
+    border-color: var(--burgundy);
+}
+
+.btn-icon {
+    display: inline-block;
+    padding: 6px 10px;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1.1em;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: var(--burgundy);
+    color: var(--white);
+    transform: scale(1.1);
+}
+
+.btn-delete:hover {
+    background: #EF4444;
+    border-color: #DC2626;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-table {
+        font-size: 0.85em;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+/* Small stat card icon */
+.stat-icon-small {
+    font-size: 1.5em;
+    margin-bottom: 8px;
+}
+
+/* Better button hover states */
+.btn-secondary:hover {
+    transform: translateX(5px);
+}
+
+/* Smooth animations for status changes */
+.status-badge {
+    transition: all 0.3s ease;
+}
+
+/* Loading state for forms */
+form button:active,
+form select:active {
+    transform: scale(0.95);
+}
+
+/* Highlight overdue warning */
+.stat-card.overdue .stat-value {
+    color: #DC2626;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Search input focus */
+input[type="text"]:focus {
+    border-color: var(--burgundy);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(92, 46, 46, 0.1);
+}
+
+/* Empty state styling */
+.invoice-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+/* Print-friendly styles */
+@media print {
+    header, .btn, .action-buttons, .alert {
+        display: none !important;
+    }
+
+    .invoice-table {
+        border: 1px solid #000;
+    }
+}

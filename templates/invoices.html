@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Management - Velvet Lavender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1>📊 Invoice Management</h1>
+                    <p class="subtitle">Track payments and manage invoices</p>
+                </div>
+                <div>
+                    <a href="/" class="btn-logout" style="margin-right: 10px;">🏠 Home</a>
+                    <a href="/logout" class="btn-logout">🚪 Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card outstanding">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <div class="stat-value">€{{ stats.outstanding }}</div>
+                    <div class="stat-label">Outstanding</div>
+                </div>
+            </div>
+
+            <div class="stat-card pending">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.pending_count }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+
+            <div class="stat-card paid">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.paid_count }}</div>
+                    <div class="stat-label">Paid</div>
+                </div>
+            </div>
+
+            <div class="stat-card overdue">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ stats.overdue_count }}</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+            </div>
+        </div>
+
+                    <!-- Search & Filter -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <input type="text"
+                       id="searchInput"
+                       placeholder="🔍 Search by client name or invoice number..."
+                       style="flex: 1; min-width: 250px; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+
+                <select id="filterStatus"
+                        style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+                    <option value="all">All Statuses</option>
+                    <option value="pending">⏳ Pending</option>
+                    <option value="paid">✅ Paid</option>
+                    <option value="overdue">⚠️ Overdue</option>
+                </select>
+            </div>
+
+
+        <!-- Invoice Table -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>📋 All Invoices ({{ invoices|length }})</h2>
+                <a href="/" class="btn btn-primary">+ Generate New Invoices</a>
+            </div>
+
+            {% if invoices %}
+                <div class="table-container">
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Client</th>
+                                <th>Amount</th>
+                                <th>Issue Date</th>
+                                <th>Month</th>
+                                <th>Status</th>
+                                <th>Payment Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                            <tr>
+                                <td><strong>{{ invoice.invoice_number }}</strong></td>
+                                <td>{{ invoice.client_name }}</td>
+                                <td><strong>€{{ invoice.total_amount }}</strong></td>
+                                <td>{{ invoice.issue_date }}</td>
+                                <td>{{ invoice.month }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ invoice.status }}">
+                                        {% if invoice.status == 'paid' %}
+                                            ✅ Paid
+                                        {% elif invoice.status == 'overdue' %}
+                                            ⚠️ Overdue
+                                        {% else %}
+                                            ⏳ Pending
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if invoice.payment_date %}
+                                        {{ invoice.payment_date }}
+                                    {% else %}
+                                        <span style="color: var(--brown);">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <!-- Status Dropdown -->
+                                        <form action="/update-status" method="POST" style="display: inline-block;">
+                                                <input type="hidden" name="invoice_number" value="{{ invoice.invoice_number }}">
+                                                <select name="status" onchange="this.form.submit()" class="status-select">
+                                                <option value="">Change Status...</option>
+                                                <option value="paid">✅ Mark as Paid</option>
+                                                <option value="pending">⏳ Mark as Pending</option>
+                                                <option value="overdue">⚠️ Mark as Overdue</option>
+                                            </select>
+                                        </form>
+
+                                        <!-- Download PDF -->
+                                        {% if invoice.pdf_filename %}
+                                        <a href="/preview/{{ invoice.pdf_filename.split('/')[-1] }}"
+                                           class="btn-icon" title="View PDF" target="_blank">
+                                            📄
+                                        </a>
+                                        {% endif %}
+
+                                        <!-- Delete -->
+                                        <form action="/delete-invoice" method="POST" style="display: inline-block;"
+                                              onsubmit="return confirm('Delete invoice {{ invoice.invoice_number }}?')">
+                                            <input type="hidden" name="invoice_number" value="{{ invoice.invoice_number }}">
+                                            <button type="submit" class="btn-icon btn-delete" title="Delete">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="info-box">
+                    <p>📭 No invoices yet. Generate your first invoices from the home page!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Made with ❤️ for Velvet Lavender</p>
+        </footer>
+    </div>
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const filterStatus = document.getElementById('filterStatus');
+        const tableRows = document.querySelectorAll('.invoice-table tbody tr');
+
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusFilter = filterStatus.value;
+
+            tableRows.forEach(row => {
+                const client = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const invoiceNum = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const status = row.querySelector('.status-badge').classList[1].replace('status-', '');
+
+                const matchesSearch = client.includes(searchTerm) || invoiceNum.includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || status === statusFilter;
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        searchInput.addEventListener('keyup', filterTable);
+        filterStatus.addEventListener('change', filterTable);
+    </script>
+</body>
+</html>
