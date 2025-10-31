@@ -202,7 +202,7 @@ def reset_email():
 def generate():
     """Generate all invoices with template selection"""
     send_email = request.form.get('send_email') == 'on'
-    template = request.form.get('template', 'classic')
+    template = 'classic'  # Always use classic
 
     try:
         # Clear old PDFs before generating new ones
