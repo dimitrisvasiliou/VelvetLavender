@@ -5,6 +5,8 @@ from datetime import datetime
 from invoice_generator import process_invoices, send_invoices_email
 import zipfile
 from functools import wraps
+from werkzeug.utils import secure_filename
+import shutil
 
 app = Flask(__name__)
 app.secret_key = 'velvet-lavender-secret-key-2025-secure'
@@ -22,25 +24,6 @@ LOGIN_PASSWORD = 'anamoux'
 
 
 # ====================================================
-
-# Add this configuration near the top with other configs
-ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@app.route('/upload-excel', methods=['POST'])
-@login_required
-def upload_excel():
-    """Upload Excel file"""
-    if 'excel_file' not in request.files:
-        flash('❌ No file selected', 'error')
-        return redirect(url_for('index'))
-
-    file = request
-
 
 def load_email_config():
     """Load email configuration from file"""
@@ -84,6 +67,14 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+# Add this with other configurations (after OUTPUT_FOLDER)
+ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -195,16 +186,25 @@ def reset_email():
 def generate():
     """Generate all invoices with template selection"""
     send_email = request.form.get('send_email') == 'on'
-    template = request.form.get('template', 'classic')  # Get selected template
+    template = request.form.get('template', 'classic')
 
     try:
+        # Clear old PDFs before generating new ones
+        if os.path.exists(OUTPUT_FOLDER):
+            for file in os.listdir(OUTPUT_FOLDER):
+                if file.endswith('.pdf'):
+                    try:
+                        os.remove(os.path.join(OUTPUT_FOLDER, file))
+                    except:
+                        pass
+
         # Generate invoices with selected template
         pdf_files = process_invoices(
             EXCEL_FILE,
             OUTPUT_FOLDER,
             LOGO_PATH,
             email_config if send_email else None,
-            template=template  # Pass template parameter
+            template=template
         )
 
         flash(f'✅ Successfully generated {len(pdf_files)} invoice(s) using {template.title()} template!', 'success')
@@ -248,6 +248,58 @@ def preview(filename):
     if os.path.exists(pdf_path):
         return send_file(pdf_path)
     return "PDF not found", 404
+
+
+@app.route('/upload-excel', methods=['POST'])
+@login_required
+def upload_excel():
+    """Upload and replace Excel file"""
+    if 'excel_file' not in request.files:
+        flash('❌ No file selected', 'error')
+        return redirect(url_for('index'))
+
+    file = request.files['excel_file']
+
+    if file.filename == '':
+        flash('❌ No file selected', 'error')
+        return redirect(url_for('index'))
+
+    if file and allowed_file(file.filename):
+        try:
+            # Backup old file if exists
+            if os.path.exists(EXCEL_FILE):
+                backup_name = f"Ana-s-invoices-backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                shutil.copy(EXCEL_FILE, backup_name)
+
+            # Save new file
+            file.save(EXCEL_FILE)
+            flash('✅ Excel file uploaded successfully!', 'success')
+
+        except Exception as e:
+            flash(f'❌ Error uploading file: {str(e)}', 'error')
+    else:
+        flash('❌ Invalid file type. Please upload .xlsx or .xls files only', 'error')
+
+    return redirect(url_for('index'))
+
+
+@app.route('/delete-excel', methods=['POST'])
+@login_required
+def delete_excel():
+    """Delete current Excel file"""
+    try:
+        if os.path.exists(EXCEL_FILE):
+            # Create backup before deleting
+            backup_name = f"Ana-s-invoices-deleted-{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            shutil.copy(EXCEL_FILE, backup_name)
+            os.remove(EXCEL_FILE)
+            flash('✅ Excel file removed. Backup created.', 'success')
+        else:
+            flash('❌ No Excel file to delete', 'error')
+    except Exception as e:
+        flash(f'❌ Error deleting file: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

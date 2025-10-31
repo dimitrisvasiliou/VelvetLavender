@@ -59,6 +59,64 @@
             </div>
         </div>
 
+                <!-- Excel File Management -->
+        <div class="card">
+            <h2>📊 Excel File Management</h2>
+
+            {% if excel_exists %}
+                <div class="alert alert-success">
+                    ✅ Excel file is loaded and ready!
+                </div>
+
+                <div class="file-info">
+                    <div class="file-info-item">
+                        <span class="label">📄 Current File:</span>
+                        <span class="value">Ana-s-invoices.xlsx</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="label">📋 Total Invoices:</span>
+                        <span class="value">{{ invoice_count }}</span>
+                    </div>
+                </div>
+
+                <div class="button-group" style="margin-top: 20px;">
+                    <form action="/upload-excel" method="POST" enctype="multipart/form-data" style="display: inline-block;">
+                        <label for="excel_file_replace" class="btn btn-secondary" style="margin: 0; cursor: pointer;">
+                            🔄 Replace Excel File
+                            <input type="file" id="excel_file_replace" name="excel_file"
+                                   accept=".xlsx,.xls" style="display: none;"
+                                   onchange="this.form.submit()">
+                        </label>
+                    </form>
+
+                    <form action="/delete-excel" method="POST" style="display: inline-block;">
+                        <button type="submit" class="btn btn-secondary"
+                                onclick="return confirm('Are you sure? A backup will be created.')">
+                            🗑️ Delete Excel File
+                        </button>
+                    </form>
+                </div>
+
+            {% else %}
+                <div class="alert alert-error">
+                    ❌ No Excel file uploaded yet!
+                </div>
+
+                <form action="/upload-excel" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="excel_file_upload">Upload Your Invoice Excel File:</label>
+                        <input type="file" id="excel_file_upload" name="excel_file"
+                               class="form-control" accept=".xlsx,.xls" required>
+                        <small>Accepted formats: .xlsx, .xls</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        📤 Upload Excel File
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
         <!-- Email Configuration -->
         <div class="card">
             <h2>📧 Email Configuration</h2>
