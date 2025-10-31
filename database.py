@@ -264,21 +264,19 @@ def get_invoice_stats():
     ''')
     status_counts = dict(cursor.fetchall())
 
-    # Total paid this month
-    if USE_POSTGRES:
-        cursor.execute('''
-            SELECT COALESCE(SUM(total_amount), 0) FROM invoices 
-            WHERE status = 'paid' 
-            AND TO_CHAR(payment_date::timestamp, 'YYYY-MM') = TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM')
-        ''')
-    else:
-        cursor.execute('''
-            SELECT SUM(total_amount) FROM invoices 
-            WHERE status = 'paid' 
-            AND strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now')
-        ''')
+    # Get all paid invoices
+    cursor.execute('''
+        SELECT total_amount, payment_date FROM invoices 
+        WHERE status = 'paid' AND payment_date IS NOT NULL
+    ''')
+    paid_invoices = cursor.fetchall()
 
-    paid_this_month = cursor.fetchone()[0] or 0
+    # Calculate this month's total in Python
+    current_month = datetime.now().strftime('%Y-%m')
+    paid_this_month = sum(
+        float(row[0]) for row in paid_invoices
+        if row[1] and row[1].startswith(current_month)
+    )
 
     conn.close()
 
