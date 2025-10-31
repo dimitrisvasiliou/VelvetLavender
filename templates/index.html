@@ -10,15 +10,14 @@
     <div class="container">
         <!-- Header -->
         <header>
-    <div class="header-content">
-        <div>
-            <h1>🌸 Velvet Lavender</h1>
-            <p class="subtitle">Invoice Generator</p>
-        </div>
-        <a href="/logout" class="btn-logout">🚪 Logout</a>
-    </div>
-</header>
-
+            <div class="header-content">
+                <div>
+                    <h1>🌸 Velvet Lavender</h1>
+                    <p class="subtitle">Invoice Generator</p>
+                </div>
+                <a href="/logout" class="btn-logout">🚪 Logout</a>
+            </div>
+        </header>
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -50,7 +49,7 @@
                 <div class="status-item">
                     <span class="label">📧 Email Configured:</span>
                     <span class="value">
-                        {% if email_config.sender_email %}
+                        {% if email_config.configured %}
                             ✅ Yes
                         {% else %}
                             ❌ No
@@ -60,7 +59,7 @@
             </div>
         </div>
 
-                <!-- Email Configuration -->
+        <!-- Email Configuration -->
         <div class="card">
             <h2>📧 Email Configuration</h2>
 
@@ -127,7 +126,6 @@
             {% endif %}
         </div>
 
-
         <!-- Generate Invoices -->
         <div class="card">
             <h2>🚀 Generate Invoices</h2>
@@ -139,10 +137,65 @@
                 </div>
             {% else %}
                 <form action="/generate" method="POST">
+
+                    <!-- Template Selection -->
+                    <div class="form-group">
+                        <label>🎨 Choose Invoice Template:</label>
+                        <div class="template-selector">
+                            <div class="template-option">
+                                <input type="radio" id="classic" name="template" value="classic" checked>
+                                <label for="classic" class="template-card">
+                                    <div class="template-preview classic-preview">
+                                        <div class="preview-header">Classic</div>
+                                        <div class="preview-body">
+                                            <div class="preview-line cream"></div>
+                                            <div class="preview-line burgundy"></div>
+                                            <div class="preview-line cream"></div>
+                                        </div>
+                                    </div>
+                                    <div class="template-name">Classic Elegance</div>
+                                    <div class="template-desc">Cream & Burgundy • Traditional</div>
+                                </label>
+                            </div>
+
+                            <div class="template-option">
+                                <input type="radio" id="modern" name="template" value="modern">
+                                <label for="modern" class="template-card">
+                                    <div class="template-preview modern-preview">
+                                        <div class="preview-header">Modern</div>
+                                        <div class="preview-body">
+                                            <div class="preview-line purple"></div>
+                                            <div class="preview-line pink"></div>
+                                            <div class="preview-line cyan"></div>
+                                        </div>
+                                    </div>
+                                    <div class="template-name">Ultra Modern</div>
+                                    <div class="template-desc">Vibrant Gradients • Fresh</div>
+                                </label>
+                            </div>
+
+                            <div class="template-option">
+                                <input type="radio" id="dark" name="template" value="dark">
+                                <label for="dark" class="template-card">
+                                    <div class="template-preview minimalist-preview">
+                                        <div class="preview-header">Minimal</div>
+                                        <div class="preview-body">
+                                            <div class="preview-line cyan-bright"></div>
+                                            <div class="preview-line light-gray"></div>
+                                            <div class="preview-line ultra-light"></div>
+                                        </div>
+                                    </div>
+                                    <div class="template-name">Minimalist Future</div>
+                                    <div class="template-desc">Ultra Clean • Spacious</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group checkbox-group">
                         <label>
                             <input type="checkbox" name="send_email"
-                                   {% if email_config.sender_email %}checked{% endif %}>
+                                   {% if email_config.configured %}checked{% endif %}>
                             <span>📧 Send invoices via email after generating</span>
                         </label>
                     </div>
@@ -161,10 +214,11 @@
                     <p><strong>What happens when you click "Generate":</strong></p>
                     <ul>
                         <li>✅ Generate {{ invoice_count }} professional PDF invoices</li>
+                        <li>✅ Use your selected template design</li>
                         <li>✅ Update Excel file with new invoice numbers</li>
                         <li>✅ Set date to today: {{ current_date }}</li>
                         <li>✅ Set month to: {{ current_month }}</li>
-                        {% if email_config.sender_email %}
+                        {% if email_config.configured %}
                             <li>✅ Send all PDFs via email</li>
                         {% endif %}
                     </ul>

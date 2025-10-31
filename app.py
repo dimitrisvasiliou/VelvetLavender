@@ -23,6 +23,24 @@ LOGIN_PASSWORD = 'anamoux'
 
 # ====================================================
 
+# Add this configuration near the top with other configs
+ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/upload-excel', methods=['POST'])
+@login_required
+def upload_excel():
+    """Upload Excel file"""
+    if 'excel_file' not in request.files:
+        flash('❌ No file selected', 'error')
+        return redirect(url_for('index'))
+
+    file = request
+
 
 def load_email_config():
     """Load email configuration from file"""
@@ -175,19 +193,21 @@ def reset_email():
 @app.route('/generate', methods=['POST'])
 @login_required
 def generate():
-    """Generate all invoices"""
+    """Generate all invoices with template selection"""
     send_email = request.form.get('send_email') == 'on'
+    template = request.form.get('template', 'classic')  # Get selected template
 
     try:
-        # Generate invoices
+        # Generate invoices with selected template
         pdf_files = process_invoices(
             EXCEL_FILE,
             OUTPUT_FOLDER,
             LOGO_PATH,
-            email_config if send_email else None
+            email_config if send_email else None,
+            template=template  # Pass template parameter
         )
 
-        flash(f'✅ Successfully generated {len(pdf_files)} invoice(s)!', 'success')
+        flash(f'✅ Successfully generated {len(pdf_files)} invoice(s) using {template.title()} template!', 'success')
 
         if send_email and email_config.get('configured') and email_config['sender_email']:
             today = datetime.now()
@@ -199,7 +219,6 @@ def generate():
         flash(f'❌ Error: {str(e)}', 'error')
 
     return redirect(url_for('index'))
-
 
 @app.route('/download-all')
 @login_required
