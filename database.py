@@ -98,11 +98,30 @@ def init_db():
 
 
 def add_invoice(invoice_data):
-    """Add a new invoice to the database"""
+    """Add a new invoice to the database - BULLETPROOF VERSION"""
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
+        # Extract client address (combine all address fields)
+        client_address_parts = []
+        for i in range(2, 5):
+            addr = invoice_data.get(f'client_address_{i}', '')
+            if addr:
+                client_address_parts.append(addr)
+        client_address = '\n'.join(client_address_parts)
+
+        # Clean and convert amounts
+        def clean_amount(value):
+            """Remove commas and convert to float"""
+            if isinstance(value, (int, float)):
+                return float(value)
+            return float(str(value).replace(',', ''))
+
+        amount = clean_amount(invoice_data.get('total', 0))
+        tax = clean_amount(invoice_data.get('tax', 0))
+        total_amount = clean_amount(invoice_data.get('total_amount', 0))
+
         if USE_POSTGRES:
             cursor.execute('''
                 INSERT INTO invoices (
@@ -110,13 +129,17 @@ def add_invoice(invoice_data):
                     total_amount, issue_date, due_date, month, year, 
                     status, pdf_filename, template
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (invoice_number) DO UPDATE SET
+                    client_name = EXCLUDED.client_name,
+                    total_amount = EXCLUDED.total_amount,
+                    updated_at = CURRENT_TIMESTAMP
             ''', (
                 invoice_data['invoice_number'],
                 invoice_data['client_name'],
-                invoice_data.get('client_address', ''),
-                float(invoice_data['total'].replace(',', '')),
-                float(invoice_data['tax'].replace(',', '')),
-                float(invoice_data['total_amount'].replace(',', '')),
+                client_address,
+                amount,
+                tax,
+                total_amount,
                 invoice_data['date_issued'],
                 invoice_data.get('due_date'),
                 invoice_data['month'],
@@ -127,7 +150,7 @@ def add_invoice(invoice_data):
             ))
         else:
             cursor.execute('''
-                INSERT INTO invoices (
+                INSERT OR REPLACE INTO invoices (
                     invoice_number, client_name, client_address, amount, tax, 
                     total_amount, issue_date, due_date, month, year, 
                     status, pdf_filename, template
@@ -135,10 +158,10 @@ def add_invoice(invoice_data):
             ''', (
                 invoice_data['invoice_number'],
                 invoice_data['client_name'],
-                invoice_data.get('client_address', ''),
-                float(invoice_data['total'].replace(',', '')),
-                float(invoice_data['tax'].replace(',', '')),
-                float(invoice_data['total_amount'].replace(',', '')),
+                client_address,
+                amount,
+                tax,
+                total_amount,
                 invoice_data['date_issued'],
                 invoice_data.get('due_date'),
                 invoice_data['month'],
@@ -152,7 +175,8 @@ def add_invoice(invoice_data):
         print(f"✅ Invoice {invoice_data['invoice_number']} added to database")
         return True
     except Exception as e:
-        print(f"⚠️ Error adding invoice: {e}")
+        print(f"❌ Error adding invoice: {e}")
+        print(f"   Invoice data: {invoice_data}")
         conn.rollback()
         return False
     finally:
@@ -161,38 +185,46 @@ def add_invoice(invoice_data):
 
 def get_all_invoices():
     """Get all invoices from database"""
-    conn = get_connection()
+    try:
+        conn = get_connection()
 
-    if USE_POSTGRES:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-    else:
-        cursor = conn.cursor()
+        if USE_POSTGRES:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cursor = conn.cursor()
 
-    cursor.execute('''
-        SELECT * FROM invoices 
-        ORDER BY created_at DESC
-    ''')
+        cursor.execute('''
+            SELECT * FROM invoices 
+            ORDER BY created_at DESC
+        ''')
 
-    invoices = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return invoices
+        invoices = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return invoices
+    except Exception as e:
+        print(f"❌ Error getting invoices: {e}")
+        return []
 
 
 def get_invoice_by_number(invoice_number):
     """Get a specific invoice by number"""
-    conn = get_connection()
+    try:
+        conn = get_connection()
 
-    if USE_POSTGRES:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('SELECT * FROM invoices WHERE invoice_number = %s', (invoice_number,))
-    else:
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM invoices WHERE invoice_number = ?', (invoice_number,))
+        if USE_POSTGRES:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute('SELECT * FROM invoices WHERE invoice_number = %s', (invoice_number,))
+        else:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM invoices WHERE invoice_number = ?', (invoice_number,))
 
-    invoice = cursor.fetchone()
-    conn.close()
+        invoice = cursor.fetchone()
+        conn.close()
 
-    return dict(invoice) if invoice else None
+        return dict(invoice) if invoice else None
+    except Exception as e:
+        print(f"❌ Error getting invoice: {e}")
+        return None
 
 
 def update_invoice_status(invoice_number, status, payment_date=None):
@@ -238,55 +270,59 @@ def update_invoice_status(invoice_number, status, payment_date=None):
 
 
 def get_invoice_stats():
-    """Get invoice statistics"""
-    conn = get_connection()
-    cursor = conn.cursor()
+    """Get invoice statistics - BULLETPROOF VERSION"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-    # Total outstanding
-    if USE_POSTGRES:
-        cursor.execute('''
-            SELECT COALESCE(SUM(total_amount), 0) FROM invoices 
-            WHERE status IN ('pending', 'overdue')
-        ''')
-    else:
-        cursor.execute('''
-            SELECT SUM(total_amount) FROM invoices 
-            WHERE status IN ('pending', 'overdue')
-        ''')
+        # Get all invoices
+        cursor.execute('SELECT status, total_amount, payment_date FROM invoices')
+        all_invoices = cursor.fetchall()
+        conn.close()
 
-    outstanding = cursor.fetchone()[0] or 0
+        # Calculate everything in Python (works everywhere!)
+        outstanding = 0
+        pending_count = 0
+        paid_count = 0
+        overdue_count = 0
+        paid_this_month = 0
 
-    # Count by status
-    cursor.execute('''
-        SELECT status, COUNT(*) as count 
-        FROM invoices 
-        GROUP BY status
-    ''')
-    status_counts = dict(cursor.fetchall())
+        current_month = datetime.now().strftime('%Y-%m')
 
-    # Get all paid invoices
-    cursor.execute('''
-        SELECT total_amount, payment_date FROM invoices 
-        WHERE status = 'paid' AND payment_date IS NOT NULL
-    ''')
-    paid_invoices = cursor.fetchall()
+        for row in all_invoices:
+            status = row[0]
+            amount = float(row[1]) if row[1] else 0
+            payment_date = row[2]
 
-    # Calculate this month's total in Python
-    current_month = datetime.now().strftime('%Y-%m')
-    paid_this_month = sum(
-        float(row[0]) for row in paid_invoices
-        if row[1] and row[1].startswith(current_month)
-    )
+            # Count by status
+            if status == 'pending':
+                pending_count += 1
+                outstanding += amount
+            elif status == 'overdue':
+                overdue_count += 1
+                outstanding += amount
+            elif status == 'paid':
+                paid_count += 1
+                # Check if paid this month
+                if payment_date and payment_date.startswith(current_month):
+                    paid_this_month += amount
 
-    conn.close()
-
-    return {
-        'outstanding': round(float(outstanding), 2),
-        'pending_count': status_counts.get('pending', 0),
-        'paid_count': status_counts.get('paid', 0),
-        'overdue_count': status_counts.get('overdue', 0),
-        'paid_this_month': round(float(paid_this_month), 2)
-    }
+        return {
+            'outstanding': round(outstanding, 2),
+            'pending_count': pending_count,
+            'paid_count': paid_count,
+            'overdue_count': overdue_count,
+            'paid_this_month': round(paid_this_month, 2)
+        }
+    except Exception as e:
+        print(f"❌ Error getting stats: {e}")
+        return {
+            'outstanding': 0,
+            'pending_count': 0,
+            'paid_count': 0,
+            'overdue_count': 0,
+            'paid_this_month': 0
+        }
 
 
 def delete_invoice(invoice_number):
