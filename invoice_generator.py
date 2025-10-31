@@ -588,7 +588,7 @@ Velvet Lavender
 
 
 def process_invoices(excel_file, output_folder, logo_path, email_config=None, template='classic'):
-    """Main processing function with template selection"""
+    """Main processing function with template selection - FIXED VERSION"""
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -609,11 +609,28 @@ def process_invoices(excel_file, output_folder, logo_path, email_config=None, te
 
     create_pdf = template_functions.get(template, create_invoice_pdf)
 
+    # FIXED: Find the HIGHEST invoice number across ALL rows
+    max_invoice_num = 0
     for index, row in df.iterrows():
-        current_invoice = row['Invoice No:']
-        invoice_num = int(str(current_invoice).replace('#', ''))
-        new_invoice_num = invoice_num + 1
+        current_invoice = str(row['Invoice No:']).replace('#', '')
+        invoice_num = int(current_invoice) if current_invoice.isdigit() else 0
+        if invoice_num > max_invoice_num:
+            max_invoice_num = invoice_num
 
+    # Start incrementing from the highest number
+    next_invoice_num = max_invoice_num + 1
+
+    print(f"\n=== Generating Invoices ===")
+    print(f"Highest existing invoice: #{max_invoice_num}")
+    print(f"Starting from: #{next_invoice_num}")
+    print(f"Total invoices to generate: {len(df)}\n")
+
+    for index, row in df.iterrows():
+        # Use the sequential counter, not the row's current number
+        new_invoice_num = next_invoice_num
+        next_invoice_num += 1  # Increment for next row
+
+        # Update Excel with new sequential number
         df.at[index, 'Invoice No:'] = f'#{new_invoice_num}'
         df.at[index, 'Date Issued:'] = invoice_date
         df.at[index, 'Month'] = current_month
@@ -640,13 +657,16 @@ def process_invoices(excel_file, output_folder, logo_path, email_config=None, te
         client_name_clean = invoice_data['client_name'].replace(' ', '_').replace('.', '').replace(',', '')
         pdf_filename = f"{output_folder}/Invoice_{client_name_clean}_{current_month}_{current_year}.pdf"
 
+        print(f"Generating #{new_invoice_num} for {invoice_data['client_name']}")
         create_pdf(invoice_data, pdf_filename, logo_path)
-        generated_pdfs.append(pdf_filename)
 
         # Save to database
         invoice_data['pdf_filename'] = pdf_filename
         invoice_data['template'] = template
         add_invoice(invoice_data)
 
+        generated_pdfs.append(pdf_filename)
+
     df.to_excel(excel_file, index=False)
+    print(f"\n✅ Generated {len(generated_pdfs)} invoices\n")
     return generated_pdfs

@@ -952,3 +952,45 @@ input[type="text"]:focus {
         border: 1px solid #000;
     }
 }
+/* ============================================ */
+/* RESPONSIVE NUMBER FORMATTING */
+/* ============================================ */
+
+/* Stat values responsive sizing */
+.stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1.1;
+    word-break: break-word;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Adjust font size for large numbers */
+.stat-card .stat-value {
+    font-size: clamp(1.5em, 4vw, 2em);  /* Responsive sizing */
+}
+
+.stat-card-small .stat-value {
+    font-size: clamp(1.2em, 3vw, 1.5em);  /* Responsive sizing */
+}
+
+/* Make sure container doesn't overflow */
+.stat-content {
+    flex: 1;
+    min-width: 0;  /* Allow flexbox to shrink */
+    overflow: hidden;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .stat-value {
+        font-size: 1.5em;
+    }
+
+    .stat-card-small .stat-value {
+        font-size: 1.2em;
+    }
+}
+

@@ -98,12 +98,12 @@ def init_db():
 
 
 def add_invoice(invoice_data):
-    """Add a new invoice to the database - BULLETPROOF VERSION"""
+    """Add a new invoice to the database - SIMPLE AND CORRECT"""
     conn = get_connection()
     cursor = conn.cursor()
 
     try:
-        # Extract client address (combine all address fields)
+        # Extract client address
         client_address_parts = []
         for i in range(2, 5):
             addr = invoice_data.get(f'client_address_{i}', '')
@@ -111,9 +111,8 @@ def add_invoice(invoice_data):
                 client_address_parts.append(addr)
         client_address = '\n'.join(client_address_parts)
 
-        # Clean and convert amounts
+        # Clean amounts
         def clean_amount(value):
-            """Remove commas and convert to float"""
             if isinstance(value, (int, float)):
                 return float(value)
             return float(str(value).replace(',', ''))
@@ -123,16 +122,14 @@ def add_invoice(invoice_data):
         total_amount = clean_amount(invoice_data.get('total_amount', 0))
 
         if USE_POSTGRES:
+            # Insert or do nothing if duplicate
             cursor.execute('''
                 INSERT INTO invoices (
                     invoice_number, client_name, client_address, amount, tax, 
                     total_amount, issue_date, due_date, month, year, 
                     status, pdf_filename, template
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (invoice_number) DO UPDATE SET
-                    client_name = EXCLUDED.client_name,
-                    total_amount = EXCLUDED.total_amount,
-                    updated_at = CURRENT_TIMESTAMP
+                ON CONFLICT (invoice_number) DO NOTHING
             ''', (
                 invoice_data['invoice_number'],
                 invoice_data['client_name'],
@@ -149,8 +146,9 @@ def add_invoice(invoice_data):
                 invoice_data.get('template', 'classic')
             ))
         else:
+            # Insert or ignore if duplicate
             cursor.execute('''
-                INSERT OR REPLACE INTO invoices (
+                INSERT OR IGNORE INTO invoices (
                     invoice_number, client_name, client_address, amount, tax, 
                     total_amount, issue_date, due_date, month, year, 
                     status, pdf_filename, template
@@ -172,11 +170,11 @@ def add_invoice(invoice_data):
             ))
 
         conn.commit()
-        print(f"✅ Invoice {invoice_data['invoice_number']} added to database")
+        print(f"✅ Invoice {invoice_data['invoice_number']} for {invoice_data['client_name']} processed")
         return True
     except Exception as e:
         print(f"❌ Error adding invoice: {e}")
-        print(f"   Invoice data: {invoice_data}")
+        print(f"   Data: {invoice_data.get('invoice_number')} - {invoice_data.get('client_name')}")
         conn.rollback()
         return False
     finally:
