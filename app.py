@@ -16,7 +16,7 @@ OUTPUT_FOLDER = 'generated_invoices'
 EMAIL_CONFIG_FILE = 'email_config.json'  # Store email config persistently
 
 # ====================================================
-# 🔐 LOGIN PASSWORD - CHANGE THIS IF NEEDED
+# 🔐 LOGIN PASSWORD - CHANGE THIS IF NEEDED 
 # ====================================================
 LOGIN_PASSWORD = 'anamoux'
 
